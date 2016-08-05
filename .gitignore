@@ -1,0 +1,7 @@
+~*
+*.pyc
+
+main.py
+points2acad.py
+
+*.csv
