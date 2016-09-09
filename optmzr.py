@@ -34,7 +34,7 @@ class Optimizator:
             if len(src) > self.maxLength:
                 self.maxLength = len(src)
         self.restricted = set()
-        self.commonPoints = []
+        self.commonPoints = self.__getCommonPoints(self.source)
         self.maxHops = 0
         self.hops = 0
 
@@ -121,59 +121,76 @@ class Optimizator:
                 if not res:
                     break
         return res
+        
+    def __getSampleContours(self, source, tolerance = 1):
+        res = []
+        for j in xrange(0, len(source)):
+            tmp = []
+            for xy in source[j]:
+                while True:
+                    xy_rand = self.__randomize(xy, tolerance)
+                    if not xy_rand in tmp:
+                        tmp.append(xy_rand)
+                        break
+            #error = GT.hasIntersect(tmp)
+            #~ if error:
+                #~ #print "Self-Intersect on contour " +  str(j)+ "! Next iter..."
+                #~ break
+            res.append(tmp)
+        return res
+        
+    def __calcAreas(self, contourList):
+        res = []
+        for lst in contourList:
+            res.append(GT.area(lst))
+        return res
+        
+    def __roundCoords(self, tolerance=0):
+        res = []
+        for src in self.source:
+            res.append(GT.roundCoords(src, tolerance))
+        return res
 
     def __found(self, tolerance):
         res = False
+        if(len(self.source) == 0) or (len(self.targetAreas) == 0):
+            return res
         usedlist = []
         foundCount = 0
         self.__calcMaxHops(tolerance)
-        if(len(self.source) > 0) and (len(self.targetAreas) > 0):
-            target = []
-            for src in self.source:
-                target.append(GT.roundCoords(src, 0))
-            self.commonPoints = self.__getCommonPoints(target)
-            i = 0
-            sample = []
-            while i < self.maxHops:
-                error = False
-                if foundCount > 0:
-                    sample = sample[0:foundCount]
-                else:
-                    sample = []
-                i += 1
-                self.foundAreas = []
-                for j in xrange(foundCount, len(target)):
-                    tmp = []
-                    for xy in target[j]:
-                        tmp.append(self.__randomize(xy, tolerance))
-                    #error = GT.hasIntersect(tmp)
-                    if error:
-                        #print "Self-Intersect on contour " +  str(j)+ "! Next iter..."
-                        break
-                    sample.append(tmp)
-                if error:
-                    continue
-                if sample not in usedlist: # DRY
-                    usedlist.append(sample)
-                    for lst in sample:
-                        self.foundAreas.append(GT.area(lst))
-                    print self.foundAreas
-                    foundCount = self.__countEqualAreas()
-                    if (foundCount == len(target)):
-                        #print self.foundAreas
-                        print self.__getCommonPoints(sample)
-                        print self.commonPoints
-                        condition = self.__isAllCommonPoints(self.__getCommonPoints(sample))
-                        if (not condition):
-                            print condition
-                            print "Resetting"
-                            foundCount = 0
-                        else:
-                            self.target.extend(sample)
-                            self.hops = i
-                            res = True
-                            break
+        target = self.__roundCoords()
+        i = 0
+        sample = []
+        while i < self.maxHops:
+            sample = sample[0:foundCount]
 
+            i += 1
+            self.foundAreas = []
+            sample.extend(self.__getSampleContours(target[foundCount:len(target)], tolerance))
+            
+            if sample in usedlist: # DRY
+                continue
+
+            usedlist.append(sample)
+            self.foundAreas = self.__calcAreas(sample)
+            print self.foundAreas
+            foundCount = self.__countEqualAreas()
+
+            if (foundCount != len(target)):
+                continue
+
+            print self.__getCommonPoints(sample)
+            print self.commonPoints
+            condition = self.__isAllCommonPoints(self.__getCommonPoints(sample))
+            if (not condition):
+                print condition
+                print "Resetting"
+                foundCount = 0
+            else:
+                self.target.extend(sample)
+                self.hops = i
+                res = True
+                break
         return res
         
     def __reduce(self, tolerance):
