@@ -166,6 +166,50 @@ class GeometryTools:
         return (trunc(da), trunc(modf(da)[0] * 60), trunc((modf(da)[0] * 60 -  modf(modf(da)[0] * 60)[1]) * 100 ), st)
 
     getRumbAngle = staticmethod(getRumbAngle)
+    
+    '''
+    clist - [(x,y),(x,y),(x,y)]
+    returns -tuple (x, y)
+    static method !
+    '''
+    def centerMassPoints(clist):
+        x = 0
+        y = 0
+        for xy in clist:
+            x += xy[0]
+            y += xy[1]
+        x /= len(clist)
+        y /= len(clist)
+        return (x, y)
+
+    centerMassPoints = staticmethod(centerMassPoints)
+
+    '''
+    clist - [(x,y),(x,y),(x,y)]
+    returns -tuple (x, y)
+    static method !
+    '''
+    def centerMassBorders(clist):
+        x = 0.0
+        y = 0.0
+        xc = 0.0
+        yc = 0.0
+        p = 0
+        for i in xrange(0,len(clist)):
+            if i < len(clist)-1:
+                l = GeometryTools.length(clist[i], clist[i+1])
+                xc += l * (clist[i][0]+clist[i+1][0]) / 2
+                yc += l * (clist[i][1]+clist[i+1][1]) / 2
+            else:
+                l = GeometryTools.length(clist[i], clist[0])
+                xc += l * (clist[i][0]+clist[0][0]) / 2
+                yc += l * (clist[i][1]+clist[0][1]) / 2
+            p += l
+        xc /= p
+        yc /= p
+        return (xc, yc)
+
+    centerMassBorders = staticmethod(centerMassBorders)
 
 class CoordListTools:
     
